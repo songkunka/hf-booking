@@ -71,15 +71,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Sànd · จองที่พักบูทีคแบบเรียลไทม์" },
+      { title: "Hotel Flow" },
       {
         name: "description",
         content:
           "จองที่พักบูทีคทั่วไทยแบบเรียลไทม์ ดูห้องว่าง ราคา และรีวิวจริง พร้อมระบบจัดการสำหรับเจ้าของที่พัก",
       },
-      { property: "og:title", content: "Sànd · Boutique Stays" },
-      { property: "og:description", content: "Real-time boutique stay booking across Thailand." },
+      { property: "og:title", content: "Hotel Flow" },
+      { property: "og:description", content: "StayEasy Bookings is a real-time web application for booking accommodations." },
       { property: "og:type", content: "website" },
+      { name: "twitter:title", content: "Hotel Flow" },
+      { name: "description", content: "StayEasy Bookings is a real-time web application for booking accommodations." },
+      { name: "twitter:description", content: "StayEasy Bookings is a real-time web application for booking accommodations." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f64d3474-e021-4900-bd58-ad323091d2b6/id-preview-06103b11--cf17f6f5-d15f-44ee-9552-fc9799529719.lovable.app-1779855148996.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/f64d3474-e021-4900-bd58-ad323091d2b6/id-preview-06103b11--cf17f6f5-d15f-44ee-9552-fc9799529719.lovable.app-1779855148996.png" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
