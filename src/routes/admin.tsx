@@ -14,13 +14,18 @@ export const Route = createFileRoute("/admin")({
   component: AdminLayout,
 });
 
-const navItems = [
+const navItems: Array<{
+  to: "/admin" | "/admin/rooms" | "/admin/calendar" | "/admin/bookings" | "/admin/pricing";
+  label: string;
+  icon: typeof LayoutDashboard;
+  exact?: boolean;
+}> = [
   { to: "/admin", label: "แดชบอร์ด", icon: LayoutDashboard, exact: true },
   { to: "/admin/rooms", label: "ห้องพัก", icon: BedDouble },
   { to: "/admin/calendar", label: "ปฏิทินสถานะ", icon: CalendarRange },
   { to: "/admin/bookings", label: "การจอง", icon: ClipboardList },
   { to: "/admin/pricing", label: "ราคาอัจฉริยะ", icon: Tag },
-] as const;
+];
 
 function AdminLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });

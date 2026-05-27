@@ -106,7 +106,7 @@ function RoomDetail() {
             <section className="mt-10">
               <h2 className="font-serif text-2xl">สิ่งอำนวยความสะดวก</h2>
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {room.amenities.map((a) => (
+                {room.amenities.map((a: string) => (
                   <div key={a} className="rounded-xl border border-border bg-card px-4 py-3 text-sm">
                     {AMENITY_LABELS[a] ?? a}
                   </div>
