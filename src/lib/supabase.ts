@@ -6,8 +6,14 @@ const supabaseUrl =
   import.meta.env.VITE_SUPABASE_URL ||
   "https://iqktqhgnnivhygrytous.supabase.co";
 
+let envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// If the key exists but doesn't look like a JWT (e.g. if the user pasted a fake key from Claude), ignore it
+if (typeof envKey === "string" && !envKey.startsWith("eyJ")) {
+  envKey = undefined;
+}
+
 const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  envKey ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxa3RxaGdubml2aHlncnl0b3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NDg2MTEsImV4cCI6MjA5NTUyNDYxMX0.epILdTsggdB-rOZI5pPTvW0ofj7YAsZ0-WeIpWecuuA";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
