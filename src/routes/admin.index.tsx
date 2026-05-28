@@ -10,8 +10,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowUpRight, BedDouble, CreditCard, Users } from "lucide-react";
-import { MOCK_BOOKINGS, getRoom } from "@/data/rooms";
+import { ArrowUpRight, BedDouble, CreditCard, Users, Loader2 } from "lucide-react";
+import { getRoom } from "@/data/rooms";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,
@@ -37,7 +39,22 @@ const occupancyData = [
 ];
 
 function AdminDashboard() {
-  const totalRevenue = MOCK_BOOKINGS.reduce((s, b) => s + b.total, 0);
+  const { data: bookings = [], isLoading } = useQuery({
+    queryKey: ["admin-dashboard-bookings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 10000,
+  });
+
+  const totalRevenue = bookings.reduce((s, b) => s + (b.total_price || 0), 0);
+
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -47,14 +64,16 @@ function AdminDashboard() {
           </p>
           <h1 className="font-serif text-4xl">ภาพรวมประจำสัปดาห์</h1>
         </div>
-        <div className="text-sm text-muted-foreground">วันนี้ · 27 พ.ค. 2026</div>
+        <div className="text-sm text-muted-foreground">
+          {new Date().toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" })}
+        </div>
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="รายได้สัปดาห์นี้" value={`฿${totalRevenue.toLocaleString()}`} delta="+18.2%" icon={<CreditCard className="h-4 w-4" />} />
-        <Kpi label="ยอดจองใหม่" value="32" delta="+9" icon={<BedDouble className="h-4 w-4" />} />
+        <Kpi label="รายได้รวม" value={`฿${totalRevenue.toLocaleString()}`} delta="+18.2%" icon={<CreditCard className="h-4 w-4" />} />
+        <Kpi label="ยอดจองใหม่" value={bookings.length.toString()} delta="+9" icon={<BedDouble className="h-4 w-4" />} />
         <Kpi label="อัตราเข้าพัก" value="84%" delta="+5%" icon={<ArrowUpRight className="h-4 w-4" />} />
-        <Kpi label="แขกที่เช็คอิน" value="48" delta="+12" icon={<Users className="h-4 w-4" />} />
+        <Kpi label="แขกทั้งหมด" value={bookings.reduce((s, b) => s + (b.guests || 2), 0).toString()} delta="+12" icon={<Users className="h-4 w-4" />} />
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
@@ -102,26 +121,41 @@ function AdminDashboard() {
       </div>
 
       <ChartCard title="การจองล่าสุด" className="mt-8">
-        <div className="divide-y divide-border">
-          {MOCK_BOOKINGS.slice(0, 5).map((b) => {
-            const room = getRoom(b.roomId)!;
-            return (
-              <div key={b.id} className="flex items-center justify-between py-3 text-sm">
-                <div className="flex items-center gap-3">
-                  <img src={room.image} alt="" className="h-10 w-10 rounded-md object-cover" />
-                  <div>
-                    <div className="font-medium">{b.guest}</div>
-                    <div className="text-xs text-muted-foreground">{room.name}</div>
+        {isLoading ? (
+          <div className="flex h-32 items-center justify-center text-muted-foreground">
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            กำลังโหลดข้อมูล...
+          </div>
+        ) : bookings.length === 0 ? (
+          <div className="flex h-32 items-center justify-center text-muted-foreground">
+            ยังไม่มีการจอง
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {bookings.slice(0, 5).map((b) => {
+              const room = getRoom(b.room_id);
+              return (
+                <div key={b.id} className="flex items-center justify-between py-3 text-sm">
+                  <div className="flex items-center gap-3">
+                    {room ? (
+                      <img src={room.image} alt="" className="h-10 w-10 rounded-md object-cover" />
+                    ) : (
+                      <div className="h-10 w-10 rounded-md bg-secondary flex items-center justify-center">?</div>
+                    )}
+                    <div>
+                      <div className="font-medium">{b.guest_first_name} {b.guest_last_name}</div>
+                      <div className="text-xs text-muted-foreground">{room ? room.name : b.room_id}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-foreground">฿{b.total_price?.toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground capitalize">{b.status}</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div>฿{b.total.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">{b.status}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </ChartCard>
     </div>
   );
@@ -139,7 +173,7 @@ function Kpi({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="text-muted-foreground">{icon}</div>
@@ -152,7 +186,7 @@ function Kpi({
 
 function ChartCard({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-border bg-card p-5 ${className}`}>
+    <div className={`rounded-2xl border border-border bg-card p-5 shadow-sm ${className}`}>
       <div className="mb-4 font-medium">{title}</div>
       {children}
     </div>
