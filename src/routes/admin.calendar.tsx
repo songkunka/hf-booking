@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ROOMS } from "@/data/rooms";
+import { useRooms } from "@/hooks/useRooms";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/calendar")({
   component: AdminCalendar,
@@ -34,6 +35,7 @@ const colors: Record<string, string> = {
 };
 
 function AdminCalendar() {
+  const { data: rooms = [], isLoading } = useRooms();
   const days = nextDays(14);
   const labels = days.map((d, i) =>
     d.toLocaleDateString("th-TH", { day: "numeric", month: "short" }) + (i === 0 ? " (วันนี้)" : ""),
@@ -71,7 +73,13 @@ function AdminCalendar() {
             </tr>
           </thead>
           <tbody>
-            {ROOMS.map((room) => (
+            {isLoading ? (
+              <tr>
+                <td colSpan={labels.length + 1} className="px-3 py-10 text-center">
+                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+                </td>
+              </tr>
+            ) : rooms.map((room) => (
               <tr key={room.id} className="border-t border-border">
                 <td className="sticky left-0 z-10 bg-card px-3 py-2">
                   <div className="font-medium">{room.name}</div>

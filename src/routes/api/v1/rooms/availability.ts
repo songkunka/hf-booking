@@ -38,9 +38,9 @@ export const APIRoute = createAPIFileRoute("/api/v1/rooms/availability")({
     const nights = Math.max(1, Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)));
 
     // Fetch rooms from Supabase instead of static ROOMS array
-    const url = "https://iqktqhgnnivhygrytous.supabase.co";
+    const supabaseUrl = "https://iqktqhgnnivhygrytous.supabase.co";
     const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxa3RxaGdubml2aHlncnl0b3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NDg2MTEsImV4cCI6MjA5NTUyNDYxMX0.epILdTsggdB-rOZI5pPTvW0ofj7YAsZ0-WeIpWecuuA";
-    const supabase = createClient(url, key);
+    const supabase = createClient(supabaseUrl, key);
 
     const { data: rooms, error } = await supabase
       .from("rooms")

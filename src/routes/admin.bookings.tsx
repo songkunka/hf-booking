@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Search, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getRoom } from "@/data/rooms";
+import { useRooms } from "@/hooks/useRooms";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
@@ -26,6 +26,7 @@ const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 function AdminBookings() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("ทั้งหมด");
+  const { data: rooms = [] } = useRooms();
 
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ["admin-bookings"],
@@ -112,7 +113,7 @@ function AdminBookings() {
               </tr>
             ) : (
               filtered.map((b) => {
-                const room = getRoom(b.room_id);
+                const room = rooms.find(r => r.id === b.room_id);
                 return (
                   <tr key={b.id} className="hover:bg-secondary/10 transition-colors">
                     <td className="px-5 py-4 font-mono text-xs text-muted-foreground">{b.booking_ref}</td>

@@ -11,8 +11,8 @@ import {
   YAxis,
 } from "recharts";
 import { ArrowUpRight, BedDouble, CreditCard, Users, Loader2 } from "lucide-react";
-import { getRoom } from "@/data/rooms";
 import { useQuery } from "@tanstack/react-query";
+import { useRooms } from "@/hooks/useRooms";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/")({
@@ -39,6 +39,7 @@ const occupancyData = [
 ];
 
 function AdminDashboard() {
+  const { data: rooms = [] } = useRooms();
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ["admin-dashboard-bookings"],
     queryFn: async () => {
@@ -133,7 +134,7 @@ function AdminDashboard() {
         ) : (
           <div className="divide-y divide-border">
             {bookings.slice(0, 5).map((b) => {
-              const room = getRoom(b.room_id);
+              const room = rooms.find(r => r.id === b.room_id);
               return (
                 <div key={b.id} className="flex items-center justify-between py-3 text-sm">
                   <div className="flex items-center gap-3">

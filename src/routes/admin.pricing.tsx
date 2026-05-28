@@ -1,13 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ROOMS } from "@/data/rooms";
+import { useRooms } from "@/hooks/useRooms";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/pricing")({
   component: AdminPricing,
 });
 
 function AdminPricing() {
+  const { data: rooms = [], isLoading } = useRooms();
+
   return (
     <div>
       <div>
@@ -19,7 +22,16 @@ function AdminPricing() {
       </div>
 
       <div className="mt-8 space-y-4">
-        {ROOMS.map((r) => (
+        {isLoading ? (
+          <div className="flex h-32 items-center justify-center text-muted-foreground">
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            กำลังโหลดข้อมูล...
+          </div>
+        ) : rooms.length === 0 ? (
+          <div className="flex h-32 items-center justify-center text-muted-foreground">
+            ยังไม่มีข้อมูลห้องพัก
+          </div>
+        ) : rooms.map((r) => (
           <div key={r.id} className="rounded-2xl border border-border bg-card p-5">
             <div className="flex items-center gap-3">
               <img src={r.image} alt="" className="h-12 w-16 rounded-md object-cover" />

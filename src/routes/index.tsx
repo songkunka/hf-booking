@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, MapPin } from "lucide-react";
+import { ArrowRight, MapPin, Loader2 } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SearchBar } from "@/components/SearchBar";
 import { RoomCard } from "@/components/RoomCard";
-import { ROOMS, HOTEL } from "@/data/rooms";
+import { HOTEL } from "@/data/rooms";
+import { useRooms } from "@/hooks/useRooms";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -17,6 +18,8 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { data: rooms = [], isLoading } = useRooms();
+
   return (
     <div className="flex min-h-screen flex-col bg-background selection:bg-primary/20">
       <SiteHeader />
@@ -73,11 +76,17 @@ function Index() {
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {ROOMS.map((room) => (
-            <RoomCard key={room.id} room={room} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="mt-10 flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {rooms.slice(0, 4).map((room) => (
+              <RoomCard key={room.id} room={room} />
+            ))}
+          </div>
+        )}
         
         <div className="mt-12 flex justify-center md:hidden">
           <Link
