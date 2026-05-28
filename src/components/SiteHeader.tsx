@@ -7,7 +7,6 @@ import { HOTEL } from "@/data/rooms";
 const navItems = [
   { to: "/", label: "หน้าแรก" },
   { to: "/rooms", label: "ห้องพัก" },
-  { to: "/admin", label: "Admin" },
 ] as const;
 
 export function SiteHeader() {
@@ -16,10 +15,7 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-baseline gap-2">
           <span className="font-serif text-2xl tracking-tight text-foreground">
-            Sànd<span className="text-primary">.</span>
-          </span>
-          <span className="hidden text-xs uppercase tracking-[0.18em] text-muted-foreground sm:inline">
-            Riverside Resort
+            Hotel<span className="text-primary">Flow</span>
           </span>
         </Link>
 

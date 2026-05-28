@@ -6,16 +6,17 @@ import {
   ClipboardList,
   Tag,
   ArrowLeft,
+  Code2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "Admin · Sànd" }] }),
+  head: () => ({ meta: [{ title: "Admin · HotelFlow" }] }),
   component: AdminLayout,
 });
 
 const navItems: Array<{
-  to: "/admin" | "/admin/rooms" | "/admin/calendar" | "/admin/bookings" | "/admin/pricing";
+  to: "/admin" | "/admin/rooms" | "/admin/calendar" | "/admin/bookings" | "/admin/pricing" | "/admin/api";
   label: string;
   icon: typeof LayoutDashboard;
   exact?: boolean;
@@ -25,6 +26,7 @@ const navItems: Array<{
   { to: "/admin/calendar", label: "ปฏิทินสถานะ", icon: CalendarRange },
   { to: "/admin/bookings", label: "การจอง", icon: ClipboardList },
   { to: "/admin/pricing", label: "ราคาอัจฉริยะ", icon: Tag },
+  { to: "/admin/api", label: "API", icon: Code2 },
 ];
 
 function AdminLayout() {
@@ -35,7 +37,7 @@ function AdminLayout() {
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
         <div className="flex h-16 items-center border-b border-border px-6">
           <Link to="/" className="flex items-center gap-2 font-serif text-xl">
-            Sànd<span className="text-primary">.</span>
+            Hotel<span className="text-primary">Flow</span>
             <span className="ml-1 text-xs uppercase tracking-wider text-muted-foreground">
               admin
             </span>

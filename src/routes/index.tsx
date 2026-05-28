@@ -39,7 +39,7 @@ function Index() {
               เชียงใหม่ · ริมแม่น้ำปิง
             </p>
             <h1 className="mt-3 max-w-3xl font-serif text-5xl leading-[1.05] text-background sm:text-6xl md:text-7xl">
-              {HOTEL.name.split(" ")[0]} <br className="hidden sm:block" />
+              Hotel<span className="text-primary">Flow</span> <br className="hidden sm:block" />
               <span className="italic">Riverside Resort</span>
             </h1>
             <p className="mt-4 max-w-xl text-background/90">
@@ -77,7 +77,7 @@ function Index() {
               <span className="italic">ริมสายน้ำปิง</span>
             </h2>
             <p className="mt-4 leading-relaxed text-foreground/80">
-              Sànd Riverside Resort คือบูทีครีสอร์ตขนาดเล็ก
+              HotelFlow คือบูทีครีสอร์ตขนาดเล็ก
               ที่ตั้งใจคัดสรรประสบการณ์การพักผ่อนแบบเงียบสงบ
               ท่ามกลางสวนเขียวขจีและสายน้ำที่ไหลผ่านตลอดวัน
             </p>

@@ -5,11 +5,11 @@ import room4 from "@/assets/room-4.jpg";
 import heroImg from "@/assets/hero.jpg";
 
 export const HOTEL = {
-  name: "Sànd Riverside Resort",
+  name: "HotelFlow",
   tagline: "บูทีครีสอร์ตริมแม่น้ำปิง · เชียงใหม่",
   address: "88 ถนนเจริญราษฎร์ ต.วัดเกต อ.เมือง จ.เชียงใหม่ 50000",
   phone: "+66 53 123 456",
-  email: "stay@sand-resort.com",
+  email: "stay@hotelflow.com",
   checkInTime: "15:00",
   checkOutTime: "12:00",
   totalRoomTypes: 4,

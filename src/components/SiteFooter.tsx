@@ -8,8 +8,7 @@ export function SiteFooter() {
         <div className="grid gap-10 md:grid-cols-3">
           <div>
             <div className="font-serif text-2xl">
-              {HOTEL.name.split(" ")[0]}
-              <span className="text-primary">.</span>
+              Hotel<span className="text-primary">Flow</span>
             </div>
             <p className="mt-3 text-sm text-muted-foreground">{HOTEL.tagline}</p>
             <p className="mt-4 inline-flex items-start gap-2 text-sm text-muted-foreground">
