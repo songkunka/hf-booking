@@ -16,6 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescript
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 const searchSchema = z.object({
   nights: z.number().min(1).default(1),
@@ -87,15 +88,48 @@ function BookingPage() {
     },
   });
 
-  const onSubmit = (data: GuestFormValues) => {
+  const onSubmit = async (data: GuestFormValues) => {
     setIsSubmitting(true);
-    // Simulate API call and email sending
-    setTimeout(() => {
-      setIsSubmitting(false);
+    
+    // Default check-in to today and checkout based on nights for demo purposes
+    // since the date picker doesn't pass dates yet.
+    const checkIn = new Date();
+    const checkOut = new Date(checkIn.getTime() + nights * 24 * 60 * 60 * 1000);
+
+    const payload = {
+      booking_ref: bookingRef,
+      room_id: room.id, // Ensure room id in DB matches `src/data/rooms.ts`
+      guest_first_name: data.firstName,
+      guest_last_name: data.lastName,
+      guest_email: data.email,
+      guest_phone: data.phone,
+      special_requests: data.requests || null,
+      check_in_date: checkIn.toISOString().split("T")[0],
+      check_out_date: checkOut.toISOString().split("T")[0],
+      nights: nights,
+      total_price: total,
+      status: "pending"
+    };
+
+    try {
+      const { error } = await supabase.from("bookings").insert(payload);
+      
+      if (error) {
+        console.error("Supabase insert error:", error);
+        toast.error("เกิดข้อผิดพลาดในการบันทึกการจอง กรุณาลองใหม่");
+        setIsSubmitting(false);
+        return;
+      }
+
       setSubmittedEmail(data.email);
       setConfirmed(true);
       toast.success(`ส่งอีเมลยืนยันไปยัง ${data.email} เรียบร้อยแล้ว`);
-    }, 1500);
+    } catch (err) {
+      console.error(err);
+      toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (confirmed) {
