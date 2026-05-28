@@ -96,9 +96,12 @@ function BookingPage() {
     const checkIn = new Date();
     const checkOut = new Date(checkIn.getTime() + nights * 24 * 60 * 60 * 1000);
 
+    // Generate a fresh booking ref each attempt to avoid duplicate key errors
+    const ref = `BK-${Math.floor(100000 + Math.random() * 900000)}`;
+
     const payload = {
-      booking_ref: bookingRef,
-      room_id: room.id, // Ensure room id in DB matches `src/data/rooms.ts`
+      booking_ref: ref,
+      room_id: room.id,
       guest_first_name: data.firstName,
       guest_last_name: data.lastName,
       guest_email: data.email,
@@ -115,8 +118,8 @@ function BookingPage() {
       const { error } = await supabase.from("bookings").insert(payload);
       
       if (error) {
-        console.error("Supabase insert error:", error);
-        toast.error("เกิดข้อผิดพลาดในการบันทึกการจอง กรุณาลองใหม่");
+        console.error("Supabase insert error:", JSON.stringify(error));
+        toast.error(`เกิดข้อผิดพลาด: ${error.message || error.code || "Unknown error"}`);
         setIsSubmitting(false);
         return;
       }
@@ -124,9 +127,10 @@ function BookingPage() {
       setSubmittedEmail(data.email);
       setConfirmed(true);
       toast.success(`ส่งอีเมลยืนยันไปยัง ${data.email} เรียบร้อยแล้ว`);
-    } catch (err) {
-      console.error(err);
-      toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    } catch (err: unknown) {
+      console.error("Booking error:", err);
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`เกิดข้อผิดพลาด: ${msg}`);
     } finally {
       setIsSubmitting(false);
     }
