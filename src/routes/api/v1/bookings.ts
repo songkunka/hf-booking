@@ -1,6 +1,5 @@
 import { createAPIFileRoute } from "@tanstack/react-start/api";
 import { createClient } from "@supabase/supabase-js";
-import { ROOMS } from "@/data/rooms";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -14,8 +13,11 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-function getRoom(id: string) {
-  return ROOMS.find((r) => r.id === id);
+// ROOMS removed, we will fetch room from Supabase directly in the endpoints if needed
+
+async function getRoom(supabase: ReturnType<typeof getSupabase>, id: string) {
+  const { data } = await supabase.from("rooms").select("*").eq("id", id).single();
+  return data;
 }
 
 export const APIRoute = createAPIFileRoute("/api/v1/bookings")({
@@ -52,7 +54,7 @@ export const APIRoute = createAPIFileRoute("/api/v1/bookings")({
         );
       }
 
-      const room = getRoom(data.room_id);
+      const room = await getRoom(supabase, data.room_id);
       return new Response(
         JSON.stringify({
           success: true,
@@ -89,8 +91,8 @@ export const APIRoute = createAPIFileRoute("/api/v1/bookings")({
       );
     }
 
-    const bookings = (data || []).map((b) => {
-      const room = getRoom(b.room_id);
+    const bookings = await Promise.all((data || []).map(async (b) => {
+      const room = await getRoom(supabase, b.room_id);
       return {
         id: b.booking_ref,
         roomId: b.room_id,
@@ -102,7 +104,7 @@ export const APIRoute = createAPIFileRoute("/api/v1/bookings")({
         total: b.total_price,
         status: b.status,
       };
-    });
+    }));
 
     return new Response(
       JSON.stringify({ success: true, data: bookings }),
@@ -144,7 +146,8 @@ export const APIRoute = createAPIFileRoute("/api/v1/bookings")({
       );
     }
 
-    const room = getRoom(roomId);
+    const supabase = getSupabase();
+    const room = await getRoom(supabase, roomId);
     if (!room) {
       return new Response(
         JSON.stringify({ success: false, error: `Room '${roomId}' not found` }),
@@ -164,7 +167,6 @@ export const APIRoute = createAPIFileRoute("/api/v1/bookings")({
 
     const bookingRef = `BK-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    const supabase = getSupabase();
     const payload = {
       booking_ref: bookingRef,
       room_id: roomId,

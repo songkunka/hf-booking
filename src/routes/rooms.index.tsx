@@ -4,7 +4,8 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SearchBar } from "@/components/SearchBar";
 import { RoomCard } from "@/components/RoomCard";
-import { ROOMS, AMENITY_LABELS, HOTEL } from "@/data/rooms";
+import { AMENITY_LABELS, HOTEL } from "@/data/rooms";
+import { useRooms } from "@/hooks/useRooms";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/rooms/")({
 });
 
 function RoomsListPage() {
+  const { data: rooms = [], isLoading } = useRooms();
   const [price, setPrice] = useState<[number, number]>([1000, 8000]);
   const [amenities, setAmenities] = useState<string[]>([]);
   const [guests, setGuests] = useState(1);
@@ -32,7 +34,7 @@ function RoomsListPage() {
   };
 
   const filtered = useMemo(() => {
-    const list = ROOMS.filter((r) => {
+    const list = [...rooms].filter((r) => {
       if (r.price < price[0] || r.price > price[1]) return false;
       if (r.capacity < guests) return false;
       if (amenities.length && !amenities.every((a) => r.amenities.includes(a))) return false;
@@ -42,7 +44,7 @@ function RoomsListPage() {
     if (sort === "price-desc") list.sort((a, b) => b.price - a.price);
     if (sort === "rating") list.sort((a, b) => b.rating - a.rating);
     return list;
-  }, [price, amenities, guests, sort]);
+  }, [rooms, price, amenities, guests, sort]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -114,7 +116,6 @@ function RoomsListPage() {
             </div>
           </div>
         </aside>
-
         <section>
           <div className="flex items-baseline justify-between">
             <h2 className="font-serif text-3xl">พบ {filtered.length} ห้องพัก</h2>
@@ -130,7 +131,13 @@ function RoomsListPage() {
             </select>
           </div>
 
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <div className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-2">
+              {[1, 2, 3, 4].map((n) => (
+                <div key={n} className="h-[400px] animate-pulse rounded-2xl bg-secondary/50" />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="mt-10 rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">
               ไม่มีห้องตรงเงื่อนไข ลองปรับตัวกรองดูครับ
             </div>

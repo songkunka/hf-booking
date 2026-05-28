@@ -4,18 +4,24 @@ import { format, differenceInDays } from "date-fns";
 import { CalendarIcon, Star, Users, Maximize, Bed } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { getRoom, AMENITY_LABELS, MOCK_REVIEWS, HOTEL } from "@/data/rooms";
+import { AMENITY_LABELS, MOCK_REVIEWS, HOTEL } from "@/data/rooms";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
 
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/rooms/$id")({
-  loader: ({ params }) => {
-    const room = getRoom(params.id);
-    if (!room) throw notFound();
+  loader: async ({ params }) => {
+    const { data: room, error } = await supabase
+      .from("rooms")
+      .select("*")
+      .eq("id", params.id)
+      .single();
+      
+    if (error || !room) throw notFound();
     return { room };
   },
   head: ({ loaderData }) => ({

@@ -41,76 +41,7 @@ export type Room = {
   cancellation: string;
 };
 
-export const ROOMS: Room[] = [
-  {
-    id: "terracotta-suite",
-    name: "Terracotta Garden Suite",
-    type: "Suite",
-    price: 3200,
-    rating: 4.9,
-    reviewsCount: 184,
-    capacity: 2,
-    beds: "1 King",
-    size: 42,
-    image: room1,
-    gallery: [room1, room3, room2],
-    amenities: ["wifi", "breakfast", "pool", "ac", "garden"],
-    description:
-      "ห้องสวีทโทนเทอร์ราคอตต้าอบอุ่น มองเห็นสวนส่วนตัว ตกแต่งสไตล์มินิมอลตะวันออก พร้อมเตียงคิงไซส์และอ่างแช่ในห้องน้ำ",
-    cancellation: "ยกเลิกฟรีก่อนเช็คอิน 48 ชั่วโมง",
-  },
-  {
-    id: "riverside-villa",
-    name: "Riverside Pool Villa",
-    type: "Pool Villa",
-    price: 6800,
-    rating: 4.95,
-    reviewsCount: 312,
-    capacity: 4,
-    beds: "2 Queen",
-    size: 78,
-    image: room2,
-    gallery: [room2, room1, room4],
-    amenities: ["wifi", "breakfast", "pool", "ac", "garden", "parking"],
-    description:
-      "วิลล่าริมแม่น้ำพร้อมสระว่ายน้ำส่วนตัว เห็นวิวสายน้ำเต็มตา เฟอร์นิเจอร์หวายและระเบียงชมพระอาทิตย์",
-    cancellation: "ยกเลิกฟรีก่อนเช็คอิน 7 วัน",
-  },
-  {
-    id: "garden-cottage",
-    name: "Hidden Garden Cottage",
-    type: "Cottage",
-    price: 1850,
-    rating: 4.8,
-    reviewsCount: 96,
-    capacity: 2,
-    beds: "1 Queen",
-    size: 28,
-    image: room3,
-    gallery: [room3, room1, room4],
-    amenities: ["wifi", "breakfast", "garden", "ac"],
-    description:
-      "กระท่อมไม้หลังเล็กท่ามกลางสวน บรรยากาศเงียบสงบ เหมาะกับคู่รักที่อยากหลบความวุ่นวาย",
-    cancellation: "ยกเลิกฟรีก่อนเช็คอิน 24 ชั่วโมง",
-  },
-  {
-    id: "skyline-loft",
-    name: "Rooftop Skyline Loft",
-    type: "Loft",
-    price: 4500,
-    rating: 4.85,
-    reviewsCount: 247,
-    capacity: 3,
-    beds: "1 King + Sofa",
-    size: 55,
-    image: room4,
-    gallery: [room4, room2, room1],
-    amenities: ["wifi", "pool", "ac", "gym", "parking"],
-    description:
-      "ลอฟต์ชั้นดาดฟ้า วิวเมืองเชียงใหม่ 270 องศา ตกแต่งสไตล์โมเดิร์น เข้าถึงสระว่ายน้ำดาดฟ้าโดยตรง",
-    cancellation: "ยกเลิกฟรีก่อนเช็คอิน 48 ชั่วโมง",
-  },
-];
+// ROOMS array removed. We now fetch from Supabase `rooms` table.
 
 export const AMENITY_LABELS: Record<string, string> = {
   wifi: "Wi-Fi ฟรี",
@@ -121,10 +52,6 @@ export const AMENITY_LABELS: Record<string, string> = {
   parking: "ที่จอดรถ",
   gym: "ฟิตเนส",
 };
-
-export function getRoom(id: string) {
-  return ROOMS.find((r) => r.id === id);
-}
 
 export const MOCK_BOOKINGS = [
   {

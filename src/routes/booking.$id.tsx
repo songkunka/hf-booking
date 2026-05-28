@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Timer, CheckCircle2, ShieldCheck, CreditCard, Clock, MapPin, AlertCircle, Loader2 } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { getRoom, HOTEL } from "@/data/rooms";
+import { HOTEL } from "@/data/rooms";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,9 +25,13 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/booking/$id")({
   validateSearch: searchSchema,
-  loader: ({ params }) => {
-    const room = getRoom(params.id);
-    if (!room) throw notFound();
+  loader: async ({ params }) => {
+    const { data: room, error } = await supabase
+      .from("rooms")
+      .select("*")
+      .eq("id", params.id)
+      .single();
+    if (error || !room) throw notFound();
     return { room };
   },
   head: ({ loaderData }) => ({

@@ -1,5 +1,5 @@
 import { createAPIFileRoute } from "@tanstack/react-start/api";
-import { ROOMS } from "@/data/rooms";
+import { createClient } from "@supabase/supabase-js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -37,8 +37,25 @@ export const APIRoute = createAPIFileRoute("/api/v1/rooms/availability")({
     const checkOutDate = new Date(checkOut);
     const nights = Math.max(1, Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)));
 
+    // Fetch rooms from Supabase instead of static ROOMS array
+    const url = "https://iqktqhgnnivhygrytous.supabase.co";
+    const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxa3RxaGdubml2aHlncnl0b3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NDg2MTEsImV4cCI6MjA5NTUyNDYxMX0.epILdTsggdB-rOZI5pPTvW0ofj7YAsZ0-WeIpWecuuA";
+    const supabase = createClient(url, key);
+
+    const { data: rooms, error } = await supabase
+      .from("rooms")
+      .select("*")
+      .gte("capacity", guests);
+
+    if (error) {
+      return new Response(
+        JSON.stringify({ success: false, error: error.message }),
+        { status: 500, headers: { "Content-Type": "application/json", ...CORS_HEADERS } },
+      );
+    }
+
     // Filter rooms by guest capacity
-    const available = ROOMS.filter((r) => r.capacity >= guests).map((r) => ({
+    const available = (rooms || []).map((r) => ({
       id: r.id,
       name: r.name,
       type: r.type,
@@ -48,7 +65,7 @@ export const APIRoute = createAPIFileRoute("/api/v1/rooms/availability")({
       beds: r.beds,
       size: r.size,
       rating: r.rating,
-      reviews_count: r.reviewsCount,
+      reviews_count: r.reviews_count,
       amenities: r.amenities,
       description: r.description,
     }));
