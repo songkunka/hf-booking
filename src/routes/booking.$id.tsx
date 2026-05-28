@@ -1,10 +1,10 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { Timer, CheckCircle2, ShieldCheck, CreditCard } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { getRoom } from "@/data/rooms";
+import { getRoom, HOTEL } from "@/data/rooms";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,9 +25,7 @@ export const Route = createFileRoute("/booking/$id")({
     return { room };
   },
   head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [{ title: `จอง ${loaderData.room.name} · Sànd` }]
-      : [],
+    meta: loaderData ? [{ title: `จอง ${loaderData.room.name} · ${HOTEL.name}` }] : [],
   }),
   component: BookingPage,
 });
@@ -37,6 +35,11 @@ function BookingPage() {
   const { nights, guests } = Route.useSearch();
   const navigate = useNavigate();
   const [confirmed, setConfirmed] = useState(false);
+  const [email, setEmail] = useState("");
+  const bookingRef = useMemo(
+    () => `BK-${Math.floor(100000 + Math.random() * 900000)}`,
+    [],
+  );
 
   // 15-minute hold timer
   const [seconds, setSeconds] = useState(15 * 60);
@@ -67,14 +70,41 @@ function BookingPage() {
           <CheckCircle2 className="h-16 w-16 text-primary" />
           <h1 className="mt-6 font-serif text-5xl">ยืนยันการจองแล้ว</h1>
           <p className="mt-3 text-muted-foreground">
-            ส่งอีเมลยืนยันไปยังอีเมลของคุณแล้ว สามารถดูประวัติการจองได้ที่บัญชีของฉัน
+            ส่งใบยืนยันการจองไปยัง{" "}
+            <span className="text-foreground">{email || "อีเมลของคุณ"}</span> เรียบร้อย
           </p>
+
+          <div className="mt-8 w-full rounded-2xl border border-border bg-card p-6 text-left">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">หมายเลขการจอง</span>
+              <span className="font-mono text-lg font-medium">{bookingRef}</span>
+            </div>
+            <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-sm">
+              <span className="text-muted-foreground">ห้องพัก</span>
+              <span>{room.name}</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">จำนวน</span>
+              <span>
+                {nights} คืน · {guests} ท่าน
+              </span>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">ยอดรวม</span>
+              <span className="font-medium">฿{total.toLocaleString()}</span>
+            </div>
+          </div>
+
+          <p className="mt-4 text-xs text-muted-foreground">
+            กรุณาแสดงหมายเลขนี้ตอนเช็คอินที่ {HOTEL.name}
+          </p>
+
           <div className="mt-8 flex gap-3">
             <Button asChild>
-              <Link to="/profile">ดูการจอง</Link>
+              <Link to="/">กลับสู่หน้าแรก</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link to="/">กลับสู่หน้าแรก</Link>
+              <Link to="/rooms">จองห้องอื่น</Link>
             </Button>
           </div>
         </main>
@@ -114,7 +144,13 @@ function BookingPage() {
                   <Input required placeholder="ใจดี" />
                 </Field>
                 <Field label="อีเมล" required>
-                  <Input type="email" required placeholder="you@email.com" />
+                  <Input
+                    type="email"
+                    required
+                    placeholder="you@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </Field>
                 <Field label="เบอร์โทร" required>
                   <Input required placeholder="081-234-5678" />
@@ -158,7 +194,7 @@ function BookingPage() {
                     {room.type}
                   </div>
                   <div className="mt-1 font-serif text-lg leading-tight">{room.name}</div>
-                  <div className="text-xs text-muted-foreground">{room.location}</div>
+                  <div className="text-xs text-muted-foreground">{HOTEL.name}</div>
                 </div>
               </div>
 

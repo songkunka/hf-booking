@@ -2,12 +2,32 @@ import room1 from "@/assets/room-1.jpg";
 import room2 from "@/assets/room-2.jpg";
 import room3 from "@/assets/room-3.jpg";
 import room4 from "@/assets/room-4.jpg";
+import heroImg from "@/assets/hero.jpg";
+
+export const HOTEL = {
+  name: "Sànd Riverside Resort",
+  tagline: "บูทีครีสอร์ตริมแม่น้ำปิง · เชียงใหม่",
+  address: "88 ถนนเจริญราษฎร์ ต.วัดเกต อ.เมือง จ.เชียงใหม่ 50000",
+  phone: "+66 53 123 456",
+  email: "stay@sand-resort.com",
+  checkInTime: "15:00",
+  checkOutTime: "12:00",
+  totalRoomTypes: 4,
+  rating: 4.9,
+  reviewsCount: 839,
+  heroImage: heroImg,
+  highlights: [
+    "ติดริมแม่น้ำปิง วิวพระอาทิตย์ขึ้น",
+    "สระว่ายน้ำ Infinity ชั้นดาดฟ้า",
+    "ห้องอาหาร Farm-to-Table",
+    "สปา & โยคะพาวิลเลียน",
+  ],
+};
 
 export type Room = {
   id: string;
   name: string;
   type: string;
-  location: string;
   price: number;
   rating: number;
   reviewsCount: number;
@@ -26,7 +46,6 @@ export const ROOMS: Room[] = [
     id: "terracotta-suite",
     name: "Terracotta Garden Suite",
     type: "Suite",
-    location: "Chiang Mai · Old City",
     price: 3200,
     rating: 4.9,
     reviewsCount: 184,
@@ -37,14 +56,13 @@ export const ROOMS: Room[] = [
     gallery: [room1, room3, room2],
     amenities: ["wifi", "breakfast", "pool", "ac", "garden"],
     description:
-      "ห้องสวีทโทนเทอร์ราคอตต้าอบอุ่น มองเห็นสวนส่วนตัว ตกแต่งสไตล์มินิมอลตะวันออก พร้อมเตียงคิงไซส์และสปาในห้องน้ำ",
+      "ห้องสวีทโทนเทอร์ราคอตต้าอบอุ่น มองเห็นสวนส่วนตัว ตกแต่งสไตล์มินิมอลตะวันออก พร้อมเตียงคิงไซส์และอ่างแช่ในห้องน้ำ",
     cancellation: "ยกเลิกฟรีก่อนเช็คอิน 48 ชั่วโมง",
   },
   {
-    id: "ocean-villa",
-    name: "Ocean Breeze Villa",
-    type: "Villa",
-    location: "Phuket · Kata Beach",
+    id: "riverside-villa",
+    name: "Riverside Pool Villa",
+    type: "Pool Villa",
     price: 6800,
     rating: 4.95,
     reviewsCount: 312,
@@ -53,16 +71,15 @@ export const ROOMS: Room[] = [
     size: 78,
     image: room2,
     gallery: [room2, room1, room4],
-    amenities: ["wifi", "breakfast", "pool", "ac", "beach", "parking"],
+    amenities: ["wifi", "breakfast", "pool", "ac", "garden", "parking"],
     description:
-      "วิลล่าริมหาดส่วนตัว เห็นวิวอันดามันเต็มตา มุ้งผ้าลินิน เฟอร์นิเจอร์หวาย และระเบียงชมพระอาทิตย์ตก",
+      "วิลล่าริมแม่น้ำพร้อมสระว่ายน้ำส่วนตัว เห็นวิวสายน้ำเต็มตา เฟอร์นิเจอร์หวายและระเบียงชมพระอาทิตย์",
     cancellation: "ยกเลิกฟรีก่อนเช็คอิน 7 วัน",
   },
   {
     id: "garden-cottage",
     name: "Hidden Garden Cottage",
     type: "Cottage",
-    location: "Pai · Mae Hong Son",
     price: 1850,
     rating: 4.8,
     reviewsCount: 96,
@@ -73,14 +90,13 @@ export const ROOMS: Room[] = [
     gallery: [room3, room1, room4],
     amenities: ["wifi", "breakfast", "garden", "ac"],
     description:
-      "กระท่อมไม้หลังเล็กท่ามกลางสวน บรรยากาศเงียบสงบ เหมาะกับคนที่อยากหลบความวุ่นวาย",
+      "กระท่อมไม้หลังเล็กท่ามกลางสวน บรรยากาศเงียบสงบ เหมาะกับคู่รักที่อยากหลบความวุ่นวาย",
     cancellation: "ยกเลิกฟรีก่อนเช็คอิน 24 ชั่วโมง",
   },
   {
     id: "skyline-loft",
-    name: "Skyline Loft",
+    name: "Rooftop Skyline Loft",
     type: "Loft",
-    location: "Bangkok · Sathorn",
     price: 4500,
     rating: 4.85,
     reviewsCount: 247,
@@ -91,7 +107,7 @@ export const ROOMS: Room[] = [
     gallery: [room4, room2, room1],
     amenities: ["wifi", "pool", "ac", "gym", "parking"],
     description:
-      "ลอฟต์ใจกลางเมือง วิวสกายไลน์ 270 องศา ตกแต่งสไตล์โมเดิร์น พร้อมสระว่ายน้ำชั้นดาดฟ้า",
+      "ลอฟต์ชั้นดาดฟ้า วิวเมืองเชียงใหม่ 270 องศา ตกแต่งสไตล์โมเดิร์น เข้าถึงสระว่ายน้ำดาดฟ้าโดยตรง",
     cancellation: "ยกเลิกฟรีก่อนเช็คอิน 48 ชั่วโมง",
   },
 ];
@@ -102,7 +118,6 @@ export const AMENITY_LABELS: Record<string, string> = {
   pool: "สระว่ายน้ำ",
   ac: "เครื่องปรับอากาศ",
   garden: "สวน",
-  beach: "ติดชายหาด",
   parking: "ที่จอดรถ",
   gym: "ฟิตเนส",
 };
@@ -124,7 +139,7 @@ export const MOCK_BOOKINGS = [
   },
   {
     id: "BK-10294",
-    roomId: "ocean-villa",
+    roomId: "riverside-villa",
     guest: "Nicha K.",
     checkIn: "2026-06-04",
     checkOut: "2026-06-09",
@@ -183,10 +198,10 @@ export const MOCK_REVIEWS = [
   },
   {
     id: "r3",
-    roomId: "ocean-villa",
+    roomId: "riverside-villa",
     author: "Aom",
     rating: 4.5,
     date: "2026-05-02",
-    text: "วิวทะเลสวยมาก เหมาะกับฮันนีมูน",
+    text: "วิวแม่น้ำสวยมาก เหมาะกับฮันนีมูน",
   },
 ];
