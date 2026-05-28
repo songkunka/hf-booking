@@ -1,31 +1,28 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Copy, Check, Eye, EyeOff, RefreshCw, Send, ChevronDown, ChevronRight } from "lucide-react";
+import { Copy, Check, Eye, EyeOff, Send, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { MOCK_BOOKINGS, getRoom, ROOMS } from "@/data/rooms";
+import { ROOMS } from "@/data/rooms";
 
 export const Route = createFileRoute("/admin/api")({
   component: AdminApi,
 });
 
-/* ── helpers ── */
-function generateApiKey() {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let key = "hf_live_";
-  for (let i = 0; i < 40; i++) key += chars[Math.floor(Math.random() * chars.length)];
-  return key;
-}
+/* ── env keys ── */
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://[PROJECT_ID].supabase.co";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "your-anon-key";
 
+/* ── helpers ── */
 function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text);
   toast.success("คัดลอกแล้ว");
 }
 
 /* ── types ── */
-type EndpointMethod = "GET" | "POST" | "PUT" | "PATCH";
+type EndpointMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 interface Endpoint {
   method: EndpointMethod;
@@ -34,217 +31,120 @@ interface Endpoint {
   description: string;
   requestBody?: string;
   responseBody: string;
+  curlQuery?: string;
   params?: { name: string; type: string; required: boolean; description: string }[];
 }
-
-/* ── mock data builders ── */
-const sampleBooking = MOCK_BOOKINGS[0];
-const sampleRoom = getRoom(sampleBooking.roomId)!;
 
 const ENDPOINTS: Endpoint[] = [
   {
     method: "GET",
-    path: "/api/v1/bookings",
+    path: "/rest/v1/bookings?select=*",
     title: "ดึงรายการจองทั้งหมด",
-    description: "ดึงรายการจองทั้งหมด สามารถกรองด้วย status, วันที่เช็คอิน หรือเช็คเอาต์",
+    description: "ดึงรายการจองทั้งหมดจากฐานข้อมูล สามารถกรองด้วย Query Parameters ตามมาตรฐาน PostgREST ของ Supabase",
     params: [
-      { name: "status", type: "string", required: false, description: "กรองสถานะ: Pending | Confirmed | Checked-in | Checked-out | Cancelled" },
-      { name: "check_in_from", type: "date", required: false, description: "กรองวันเช็คอินตั้งแต่ (YYYY-MM-DD)" },
-      { name: "check_in_to", type: "date", required: false, description: "กรองวันเช็คอินถึง (YYYY-MM-DD)" },
-      { name: "page", type: "number", required: false, description: "หน้าที่ต้องการ (default: 1)" },
-      { name: "limit", type: "number", required: false, description: "จำนวนต่อหน้า (default: 20, max: 100)" },
+      { name: "status", type: "string", required: false, description: "กรองสถานะ: เพิ่ม &status=eq.confirmed ท้าย URL" },
+      { name: "limit", type: "number", required: false, description: "จำกัดจำนวน: เพิ่ม &limit=10" },
+      { name: "order", type: "string", required: false, description: "เรียงลำดับ: เพิ่ม &order=created_at.desc" },
     ],
+    curlQuery: "?select=*&order=created_at.desc&limit=5",
     responseBody: JSON.stringify(
-      {
-        success: true,
-        data: MOCK_BOOKINGS.slice(0, 2).map((b) => ({
-          id: b.id,
-          room: { id: b.roomId, name: getRoom(b.roomId)?.name },
-          guest: b.guest,
-          checkIn: b.checkIn,
-          checkOut: b.checkOut,
-          nights: b.nights,
-          total: b.total,
-          currency: "THB",
-          status: b.status,
-          createdAt: "2026-05-28T06:00:00Z",
-        })),
-        pagination: { page: 1, limit: 20, total: MOCK_BOOKINGS.length },
-      },
+      [
+        {
+          "id": "e81f...",
+          "booking_ref": "BK-10293",
+          "room_id": "terracotta-suite",
+          "guest_first_name": "Somchai",
+          "guest_last_name": "P.",
+          "guest_email": "somchai@email.com",
+          "guest_phone": "0812345678",
+          "check_in_date": "2026-07-01",
+          "check_out_date": "2026-07-04",
+          "nights": 3,
+          "total_price": 9600,
+          "status": "confirmed",
+          "created_at": "2026-05-28T06:00:00Z"
+        }
+      ],
       null,
       2,
     ),
   },
   {
     method: "GET",
-    path: "/api/v1/bookings/:id",
-    title: "ดึงรายละเอียดการจอง",
-    description: "ดึงข้อมูลรายละเอียดการจองตาม Booking ID",
-    params: [{ name: "id", type: "string", required: true, description: "Booking ID เช่น BK-10293" }],
+    path: "/rest/v1/bookings?booking_ref=eq.{id}",
+    title: "ดึงรายละเอียดการจองตามรหัส",
+    description: "ค้นหาข้อมูลการจองเฉพาะรายการ โดยระบุ booking_ref (เช่น BK-10293)",
+    params: [{ name: "booking_ref", type: "string", required: true, description: "รหัสจอง เช่น eq.BK-10293" }],
+    curlQuery: "?booking_ref=eq.BK-10293&select=*",
     responseBody: JSON.stringify(
-      {
-        success: true,
-        data: {
-          id: sampleBooking.id,
-          room: { id: sampleRoom.id, name: sampleRoom.name, type: sampleRoom.type, price: sampleRoom.price },
-          guest: { name: sampleBooking.guest, email: "somchai@email.com", phone: "+66812345678" },
-          checkIn: sampleBooking.checkIn,
-          checkOut: sampleBooking.checkOut,
-          nights: sampleBooking.nights,
-          total: sampleBooking.total,
-          taxes: Math.round(sampleBooking.total * 0.07),
-          currency: "THB",
-          status: sampleBooking.status,
-          paymentMethod: "credit_card",
-          specialRequests: "ขอเตียงเสริม",
-          createdAt: "2026-05-28T06:00:00Z",
-          updatedAt: "2026-05-28T06:10:00Z",
-        },
-      },
+      [
+        {
+          "id": "e81f...",
+          "booking_ref": "BK-10293",
+          "room_id": "terracotta-suite",
+          "status": "confirmed"
+        }
+      ],
       null,
       2,
     ),
   },
   {
     method: "POST",
-    path: "/api/v1/bookings",
+    path: "/rest/v1/bookings",
     title: "สร้างการจองใหม่",
-    description: "สร้างการจองใหม่เมื่อมีลูกค้าจองห้องพัก ระบบจะตรวจสอบห้องว่างและล็อกห้องให้อัตโนมัติ",
+    description: "สร้างการจองใหม่ลงตาราง bookings ต้องส่ง Header `Prefer: return=representation` หากต้องการให้คืนค่าข้อมูลที่เพิ่งสร้างกลับมา",
     params: [
-      { name: "roomId", type: "string", required: true, description: "รหัสห้องพัก เช่น terracotta-suite" },
-      { name: "guest.name", type: "string", required: true, description: "ชื่อผู้เข้าพัก" },
-      { name: "guest.email", type: "string", required: true, description: "อีเมลผู้เข้าพัก" },
-      { name: "guest.phone", type: "string", required: true, description: "เบอร์โทรผู้เข้าพัก" },
-      { name: "checkIn", type: "date", required: true, description: "วันเช็คอิน (YYYY-MM-DD)" },
-      { name: "checkOut", type: "date", required: true, description: "วันเช็คเอาต์ (YYYY-MM-DD)" },
-      { name: "guests", type: "number", required: true, description: "จำนวนผู้เข้าพัก" },
-      { name: "paymentMethod", type: "string", required: false, description: "วิธีชำระเงิน: credit_card | promptpay | pay_at_hotel" },
-      { name: "specialRequests", type: "string", required: false, description: "คำขอพิเศษ" },
+      { name: "booking_ref", type: "string", required: true, description: "รหัสการจอง เช่น BK-20001" },
+      { name: "room_id", type: "string", required: true, description: "รหัสห้องพัก (เช่น terracotta-suite)" },
+      { name: "guest_first_name", type: "string", required: true, description: "ชื่อผู้เข้าพัก" },
+      { name: "check_in_date", type: "date", required: true, description: "วันเช็คอิน (YYYY-MM-DD)" },
+      { name: "check_out_date", type: "date", required: true, description: "วันเช็คเอาต์ (YYYY-MM-DD)" },
     ],
     requestBody: JSON.stringify(
       {
-        roomId: "terracotta-suite",
-        guest: { name: "Somchai P.", email: "somchai@email.com", phone: "+66812345678" },
-        checkIn: "2026-07-01",
-        checkOut: "2026-07-04",
-        guests: 2,
-        paymentMethod: "credit_card",
-        specialRequests: "ขอเตียงเสริม 1 เตียง",
+        booking_ref: "BK-20001",
+        room_id: "terracotta-suite",
+        guest_first_name: "Somchai",
+        guest_last_name: "P.",
+        guest_email: "somchai@email.com",
+        guest_phone: "0812345678",
+        check_in_date: "2026-07-01",
+        check_out_date: "2026-07-04",
+        nights: 3,
+        total_price: 9600,
+        status: "pending"
       },
       null,
       2,
     ),
     responseBody: JSON.stringify(
-      {
-        success: true,
-        data: {
-          id: "BK-20001",
-          room: { id: "terracotta-suite", name: "Terracotta Garden Suite" },
-          guest: { name: "Somchai P.", email: "somchai@email.com", phone: "+66812345678" },
-          checkIn: "2026-07-01",
-          checkOut: "2026-07-04",
-          nights: 3,
-          total: 9600,
-          taxes: 672,
-          currency: "THB",
-          status: "Pending",
-          paymentMethod: "credit_card",
-          specialRequests: "ขอเตียงเสริม 1 เตียง",
-          createdAt: "2026-05-28T13:00:00Z",
-        },
-        message: "การจองสำเร็จ รอยืนยันการชำระเงิน",
-      },
+      [
+        {
+          "id": "new-uuid",
+          "booking_ref": "BK-20001",
+          "status": "pending"
+        }
+      ],
       null,
       2,
     ),
   },
   {
     method: "PATCH",
-    path: "/api/v1/bookings/:id/status",
+    path: "/rest/v1/bookings?booking_ref=eq.{id}",
     title: "อัปเดตสถานะการจอง",
-    description: "อัปเดตสถานะการจอง เช่น ยืนยัน, เช็คอิน, เช็คเอาต์ หรือยกเลิก",
+    description: "อัปเดตข้อมูลการจองเฉพาะฟิลด์ที่ส่งไป เช่น เปลี่ยนสถานะเป็น confirmed, checked-in",
     params: [
-      { name: "id", type: "string", required: true, description: "Booking ID" },
-      { name: "status", type: "string", required: true, description: "สถานะใหม่: Confirmed | Checked-in | Checked-out | Cancelled" },
-      { name: "reason", type: "string", required: false, description: "เหตุผล (จำเป็นเมื่อยกเลิก)" },
+      { name: "booking_ref", type: "string", required: true, description: "รหัสที่ต้องการอัปเดต เช่น eq.BK-20001" },
     ],
+    curlQuery: "?booking_ref=eq.BK-20001",
     requestBody: JSON.stringify(
-      { status: "Confirmed" },
+      { status: "confirmed" },
       null,
       2,
     ),
-    responseBody: JSON.stringify(
-      {
-        success: true,
-        data: {
-          id: "BK-10294",
-          status: "Confirmed",
-          previousStatus: "Pending",
-          updatedAt: "2026-05-28T13:05:00Z",
-        },
-        message: "อัปเดตสถานะเป็น Confirmed เรียบร้อย",
-      },
-      null,
-      2,
-    ),
-  },
-  {
-    method: "GET",
-    path: "/api/v1/rooms/availability",
-    title: "ตรวจสอบห้องว่าง",
-    description: "ตรวจสอบห้องว่างตามช่วงวันที่ระบุ",
-    params: [
-      { name: "check_in", type: "date", required: true, description: "วันเช็คอิน (YYYY-MM-DD)" },
-      { name: "check_out", type: "date", required: true, description: "วันเช็คเอาต์ (YYYY-MM-DD)" },
-      { name: "guests", type: "number", required: false, description: "จำนวนผู้เข้าพัก" },
-    ],
-    responseBody: JSON.stringify(
-      {
-        success: true,
-        data: ROOMS.map((r) => ({
-          id: r.id,
-          name: r.name,
-          type: r.type,
-          price: r.price,
-          capacity: r.capacity,
-          available: Math.random() > 0.3,
-        })),
-        query: { checkIn: "2026-07-01", checkOut: "2026-07-04", guests: 2 },
-      },
-      null,
-      2,
-    ),
-  },
-  {
-    method: "POST",
-    path: "/api/v1/webhooks/booking",
-    title: "Webhook — แจ้งเตือนการจอง",
-    description:
-      "ตั้งค่า Webhook URL เพื่อรับ event แจ้งเตือนอัตโนมัติ เมื่อมีการจองใหม่, ยืนยัน, เช็คอิน, เช็คเอาต์ หรือยกเลิก ระบบจะส่ง POST request ไปยัง URL ที่ลงทะเบียนไว้",
-    requestBody: JSON.stringify(
-      {
-        url: "https://your-server.com/webhook/hotelflow",
-        events: ["booking.created", "booking.confirmed", "booking.checked_in", "booking.checked_out", "booking.cancelled"],
-        secret: "whsec_your_signing_secret",
-      },
-      null,
-      2,
-    ),
-    responseBody: JSON.stringify(
-      {
-        success: true,
-        data: {
-          id: "wh_001",
-          url: "https://your-server.com/webhook/hotelflow",
-          events: ["booking.created", "booking.confirmed", "booking.checked_in", "booking.checked_out", "booking.cancelled"],
-          active: true,
-          createdAt: "2026-05-28T13:00:00Z",
-        },
-        message: "Webhook ลงทะเบียนเรียบร้อย",
-      },
-      null,
-      2,
-    ),
+    responseBody: "204 No Content (หากไม่ใส่ Prefer header)\nหรือคืนค่าข้อมูลหากใส่ Prefer: return=representation",
   },
 ];
 
@@ -254,29 +154,31 @@ const methodColor: Record<EndpointMethod, string> = {
   POST: "bg-blue-500/15 text-blue-600",
   PUT: "bg-amber-500/15 text-amber-600",
   PATCH: "bg-violet-500/15 text-violet-600",
+  DELETE: "bg-red-500/15 text-red-600",
 };
 
 function AdminApi() {
-  const [apiKey] = useState(() => generateApiKey());
   const [showKey, setShowKey] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copiedKey, setCopiedKey] = useState(false);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(0);
 
   const handleCopyKey = () => {
-    copyToClipboard(apiKey);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    copyToClipboard(supabaseAnonKey);
+    setCopiedKey(true);
+    setTimeout(() => setCopiedKey(false), 2000);
   };
 
   return (
     <div className="max-w-4xl">
       {/* Header */}
       <div>
-        <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">API</p>
+        <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 mb-4 text-xs font-medium text-primary">
+          <Check className="h-3.5 w-3.5" /> ขับเคลื่อนโดย Supabase REST API
+        </div>
         <h1 className="font-serif text-4xl">API สำหรับระบบจอง</h1>
-        <p className="mt-2 text-muted-foreground">
-          ใช้ API เหล่านี้เพื่อส่งและรับข้อมูลการจองห้องพักแบบเรียลไทม์ รองรับการสร้างจอง ตรวจสอบสถานะ
-          และรับ Webhook แจ้งเตือน
+        <p className="mt-3 text-muted-foreground leading-relaxed">
+          เนื่องจากเราใช้งานฐานข้อมูลผ่าน Supabase ระบบจึงสร้าง REST API ให้อัตโนมัติตามมาตรฐาน <strong>PostgREST</strong> 
+          <br/>คุณสามารถนำ Base URL และ API Key ไปให้ Partner หรือยิงผ่านแอปพลิเคชันอื่นเพื่อเชื่อมต่อกับตาราง <code>bookings</code> ได้ทันที
         </p>
       </div>
 
@@ -284,64 +186,63 @@ function AdminApi() {
       <div className="mt-8 rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-serif text-xl">API Key</h2>
+            <h2 className="font-serif text-xl flex items-center gap-2">
+              Authentication (API Key)
+            </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              ใช้ Header <code className="rounded bg-secondary px-1.5 py-0.5 text-xs font-mono">Authorization: Bearer &lt;API_KEY&gt;</code> ในทุก request
+              ต้องส่ง Header 2 ตัวในทุก Request เสมอ:
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => toast.info("สร้าง API Key ใหม่เรียบร้อย (demo)")}>
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> สร้างใหม่
-          </Button>
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
-          <div className="relative flex-1">
-            <Input
-              readOnly
-              value={showKey ? apiKey : apiKey.replace(/./g, "•")}
-              className="pr-20 font-mono text-sm"
-            />
-            <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1">
-              <button
-                onClick={() => setShowKey(!showKey)}
-                className="rounded p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                title={showKey ? "ซ่อน" : "แสดง"}
-              >
-                {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-              <button
-                onClick={handleCopyKey}
-                className="rounded p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                title="คัดลอก"
-              >
-                {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
-              </button>
-            </div>
+        <div className="mt-4 grid gap-3 font-mono text-sm">
+          <div className="flex flex-wrap items-center gap-2 rounded-lg bg-secondary/50 px-4 py-2 border border-border/50">
+            <span className="font-semibold w-24">apikey:</span> 
+            <span className="text-muted-foreground flex-1 break-all">
+              {showKey ? supabaseAnonKey : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh..."}
+            </span>
           </div>
+          <div className="flex flex-wrap items-center gap-2 rounded-lg bg-secondary/50 px-4 py-2 border border-border/50">
+            <span className="font-semibold w-24">Authorization:</span> 
+            <span className="text-muted-foreground flex-1 break-all">
+              Bearer {showKey ? supabaseAnonKey : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh..."}
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-4 flex gap-2">
+           <Button variant="outline" size="sm" onClick={() => setShowKey(!showKey)}>
+              {showKey ? <EyeOff className="mr-1.5 h-4 w-4" /> : <Eye className="mr-1.5 h-4 w-4" />}
+              {showKey ? "ซ่อนคีย์" : "แสดงคีย์จริงของคุณ"}
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handleCopyKey}>
+              {copiedKey ? <Check className="mr-1.5 h-4 w-4 text-primary" /> : <Copy className="mr-1.5 h-4 w-4" />}
+              คัดลอก ANON KEY
+            </Button>
         </div>
       </div>
 
       {/* Base URL */}
       <div className="mt-6 rounded-2xl border border-border bg-card p-6">
         <h2 className="font-serif text-xl">Base URL</h2>
-        <div className="mt-3 flex items-center gap-2 rounded-xl bg-secondary/60 px-4 py-3 font-mono text-sm">
-          <span className="text-muted-foreground">https://</span>
-          <span className="text-foreground">api.hotelflow.com</span>
+        <div className="mt-3 flex items-center gap-2 rounded-xl bg-primary/5 border border-primary/20 px-4 py-3 font-mono text-sm">
+          <span className="text-foreground font-semibold break-all">{supabaseUrl}/rest/v1</span>
           <button
-            onClick={() => copyToClipboard("https://api.hotelflow.com")}
-            className="ml-auto rounded p-1 text-muted-foreground hover:text-foreground"
+            onClick={() => copyToClipboard(`${supabaseUrl}/rest/v1`)}
+            className="ml-auto rounded p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary transition"
+            title="คัดลอก Base URL"
           >
-            <Copy className="h-3.5 w-3.5" />
+            <Copy className="h-4 w-4" />
           </button>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Response ทุก endpoint เป็น JSON · Rate limit: 100 req/min · ใช้ HTTPS เท่านั้น
+        <p className="mt-3 text-xs text-muted-foreground">
+          หากต้องการเรียกตารางไหน ให้เติมชื่อตารางต่อท้าย เช่น <code>/rest/v1/bookings</code> หรือ <code>/rest/v1/rooms</code>
         </p>
       </div>
 
       {/* Endpoints */}
       <div className="mt-8 space-y-3">
-        <h2 className="font-serif text-2xl">Endpoints</h2>
+        <h2 className="font-serif text-2xl">Endpoints สำหรับการจอง</h2>
 
         {ENDPOINTS.map((ep, idx) => {
           const open = expandedIdx === idx;
@@ -372,14 +273,14 @@ function AdminApi() {
                   {/* Params table */}
                   {ep.params && ep.params.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-foreground">Parameters</h4>
+                      <h4 className="text-sm font-medium text-foreground">Parameters / Query</h4>
                       <div className="mt-2 overflow-hidden rounded-xl border border-border">
                         <table className="w-full text-sm">
                           <thead className="bg-secondary/50 text-left text-muted-foreground">
                             <tr>
-                              <th className="px-4 py-2 font-medium">ชื่อ</th>
+                              <th className="px-4 py-2 font-medium">ฟิลด์</th>
                               <th className="px-4 py-2 font-medium">ประเภท</th>
-                              <th className="px-4 py-2 font-medium">จำเป็น</th>
+                              <th className="px-4 py-2 font-medium">บังคับ</th>
                               <th className="px-4 py-2 font-medium">คำอธิบาย</th>
                             </tr>
                           </thead>
@@ -408,7 +309,7 @@ function AdminApi() {
                   {ep.requestBody && (
                     <div>
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium text-foreground">Request Body</h4>
+                        <h4 className="text-sm font-medium text-foreground">Request Body (JSON)</h4>
                         <button
                           onClick={() => copyToClipboard(ep.requestBody!)}
                           className="rounded p-1 text-muted-foreground hover:text-foreground"
@@ -426,7 +327,7 @@ function AdminApi() {
                   <div>
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-medium text-foreground">
-                        Response <Badge className="ml-1.5 bg-emerald-500/15 text-emerald-600 text-[10px]">200 OK</Badge>
+                        Response Example
                       </h4>
                       <button
                         onClick={() => copyToClipboard(ep.responseBody)}
@@ -441,24 +342,19 @@ function AdminApi() {
                   </div>
 
                   {/* Try it */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 pt-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => toast.success(`${ep.method} ${ep.path} → 200 OK (demo)`)}
-                    >
-                      <Send className="mr-1.5 h-3.5 w-3.5" /> ทดสอบ API
-                    </Button>
-                    <button
                       onClick={() =>
                         copyToClipboard(
-                          `curl -X ${ep.method} https://api.hotelflow.com${ep.path.replace(":id", sampleBooking.id)} \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  -H "Content-Type: application/json"${ep.requestBody ? ` \\\n  -d '${ep.requestBody.replace(/\n/g, "")}'` : ""}`,
+                          `curl -X ${ep.method} '${supabaseUrl}/rest/v1/bookings${ep.curlQuery || ""}' \\\n-H "apikey: ${supabaseAnonKey}" \\\n-H "Authorization: Bearer ${supabaseAnonKey}" \\\n-H "Content-Type: application/json"${ep.method === "POST" || ep.method === "PATCH" ? ` \\\n-H "Prefer: return=representation"` : ""}${ep.requestBody ? ` \\\n-d '${ep.requestBody.replace(/\n/g, "")}'` : ""}`,
                         )
                       }
-                      className="text-xs text-muted-foreground hover:text-foreground"
+                      className="border-primary/50 text-primary hover:bg-primary/10"
                     >
-                      คัดลอก cURL
-                    </button>
+                      <Copy className="mr-1.5 h-3.5 w-3.5" /> คัดลอกคำสั่ง cURL ของจริงไปทดสอบ
+                    </Button>
                   </div>
                 </div>
               )}
@@ -467,79 +363,28 @@ function AdminApi() {
         })}
       </div>
 
-      {/* Error codes */}
-      <div className="mt-8 rounded-2xl border border-border bg-card p-6">
-        <h2 className="font-serif text-xl">Error Codes</h2>
-        <div className="mt-4 overflow-hidden rounded-xl border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-secondary/50 text-left text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2 font-medium">HTTP Code</th>
-                <th className="px-4 py-2 font-medium">ความหมาย</th>
-                <th className="px-4 py-2 font-medium">เมื่อใด</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { code: "400", label: "Bad Request", desc: "ข้อมูลไม่ถูกต้อง เช่น วันที่ผิดรูปแบบ" },
-                { code: "401", label: "Unauthorized", desc: "API Key ไม่ถูกต้องหรือหมดอายุ" },
-                { code: "404", label: "Not Found", desc: "ไม่พบ Booking ID หรือ Room ID" },
-                { code: "409", label: "Conflict", desc: "ห้องถูกจองไปแล้วในช่วงเวลาเดียวกัน" },
-                { code: "429", label: "Too Many Requests", desc: "เกิน Rate limit (100 req/min)" },
-                { code: "500", label: "Server Error", desc: "เกิดข้อผิดพลาดภายในระบบ" },
-              ].map((e) => (
-                <tr key={e.code} className="border-t border-border">
-                  <td className="px-4 py-2 font-mono text-xs font-semibold text-destructive">{e.code}</td>
-                  <td className="px-4 py-2 font-medium">{e.label}</td>
-                  <td className="px-4 py-2 text-xs text-muted-foreground">{e.desc}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       {/* Webhook events */}
-      <div className="mt-6 rounded-2xl border border-border bg-card p-6 mb-8">
-        <h2 className="font-serif text-xl">Webhook Events</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          เมื่อเกิดเหตุการณ์ ระบบจะส่ง POST request ไปยัง Webhook URL ที่ลงทะเบียนไว้ พร้อม payload ดังนี้
-        </p>
-        <pre className="mt-4 overflow-x-auto rounded-xl bg-zinc-950 p-4 text-xs leading-relaxed text-amber-400">
-          <code>
-            {JSON.stringify(
-              {
-                event: "booking.created",
-                timestamp: "2026-05-28T13:00:00Z",
-                data: {
-                  id: "BK-20001",
-                  roomId: "terracotta-suite",
-                  guest: "Somchai P.",
-                  checkIn: "2026-07-01",
-                  checkOut: "2026-07-04",
-                  total: 9600,
-                  status: "Pending",
-                },
-              },
-              null,
-              2,
-            )}
-          </code>
-        </pre>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          {[
-            { event: "booking.created", desc: "เมื่อมีการจองใหม่" },
-            { event: "booking.confirmed", desc: "เมื่อยืนยันการจอง" },
-            { event: "booking.checked_in", desc: "เมื่อแขกเช็คอิน" },
-            { event: "booking.checked_out", desc: "เมื่อแขกเช็คเอาต์" },
-            { event: "booking.cancelled", desc: "เมื่อยกเลิกการจอง" },
-            { event: "booking.updated", desc: "เมื่อข้อมูลการจองถูกแก้ไข" },
-          ].map((e) => (
-            <div key={e.event} className="flex items-center gap-2 rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm">
-              <code className="text-xs font-mono text-primary">{e.event}</code>
-              <span className="text-muted-foreground">— {e.desc}</span>
-            </div>
-          ))}
+      <div className="mt-8 rounded-2xl border border-border bg-card p-6 mb-12">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Send className="h-6 w-6" />
+          </div>
+          <div>
+            <h2 className="font-serif text-xl">Database Webhooks (การแจ้งเตือนอัตโนมัติ)</h2>
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+              หากต้องการให้ระบบส่งแจ้งเตือน (HTTP POST) ไปยัง Server หรือ Line Notify ของคุณ ทันทีที่มีลูกค้ายืนยันการจอง 
+              คุณไม่ต้องพึ่งพา Backend ของเว็บเราเลย!
+            </p>
+            <p className="mt-2 text-sm text-foreground font-medium">
+              คุณสามารถไปเปิดใช้งานได้ที่ <a href="https://supabase.com/dashboard/project/_/database/hooks" target="_blank" rel="noreferrer" className="inline-flex items-center text-primary hover:underline">Supabase Dashboard <ExternalLink className="ml-1 h-3 w-3" /></a>
+            </p>
+            <ul className="mt-4 list-disc pl-5 text-sm text-muted-foreground space-y-2">
+              <li>ไปที่เมนู <strong>Database</strong> &gt; <strong>Webhooks</strong></li>
+              <li>สร้าง Webhook ใหม่ เลือกตาราง <code>bookings</code></li>
+              <li>เลือก Events: <strong>Insert</strong> (จองใหม่) หรือ <strong>Update</strong> (เปลี่ยนสถานะ)</li>
+              <li>ใส่ URL ปลายทางที่คุณต้องการให้ Supabase ยิงข้อมูลไปให้</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
