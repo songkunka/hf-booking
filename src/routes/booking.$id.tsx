@@ -10,13 +10,17 @@ import { HOTEL } from "@/data/rooms";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
 const searchSchema = z.object({
   nights: z.number().min(1).default(1),
@@ -37,7 +41,7 @@ export const Route = createFileRoute("/booking/$id")({
   head: ({ loaderData }) => ({
     meta: loaderData ? [{ title: `จอง ${loaderData.room.name} · ${HOTEL.name}` }] : [],
   }),
-  component: BookingPage,
+  component: BookingPageWrapper,
 });
 
 const guestSchema = z.object({
@@ -46,24 +50,53 @@ const guestSchema = z.object({
   email: z.string().email("รูปแบบอีเมลไม่ถูกต้อง"),
   phone: z.string().min(9, "เบอร์โทรสั้นเกินไป"),
   requests: z.string().max(500, "ความยาวต้องไม่เกิน 500 ตัวอักษร").optional(),
-  paymentMethod: z.string().min(1, "กรุณาเลือกวิธีการชำระเงิน"),
 });
 
 type GuestFormValues = z.infer<typeof guestSchema>;
 
-function BookingPage() {
+function BookingPageWrapper() {
   const { room } = Route.useLoaderData();
   const { nights, guests } = Route.useSearch();
+  const subtotal = nights * room.price;
+  const taxes = Math.round(subtotal * 0.07);
+  const total = subtotal + taxes;
+  const bookingRef = useMemo(() => `BK-${Math.floor(100000 + Math.random() * 900000)}`, []);
+  const [clientSecret, setClientSecret] = useState("");
+
+  useEffect(() => {
+    fetch("/api/v1/create-payment-intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: total, bookingRef }),
+    })
+      .then((res) => res.json())
+      .then((data) => setClientSecret(data.clientSecret));
+  }, [total, bookingRef]);
+
+  if (!clientSecret) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">กำลังเตรียมข้อมูลการชำระเงิน...</p>
+      </div>
+    );
+  }
+
+  return (
+    <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
+      <BookingPage bookingRef={bookingRef} total={total} subtotal={subtotal} taxes={taxes} room={room} nights={nights} guests={guests} />
+    </Elements>
+  );
+}
+
+function BookingPage({ bookingRef, total, subtotal, taxes, room, nights, guests }: any) {
   const navigate = useNavigate();
+  const stripe = useStripe();
+  const elements = useElements();
   const [confirmed, setConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");
   
-  const bookingRef = useMemo(
-    () => `BK-${Math.floor(100000 + Math.random() * 900000)}`,
-    [],
-  );
-
   // 15-minute hold timer
   const [seconds, setSeconds] = useState(15 * 60);
   useEffect(() => {
@@ -76,10 +109,6 @@ function BookingPage() {
   const ss = String(seconds % 60).padStart(2, "0");
   const isTimeUp = seconds === 0;
 
-  const subtotal = nights * room.price;
-  const taxes = Math.round(subtotal * 0.07);
-  const total = subtotal + taxes;
-
   const form = useForm<GuestFormValues>({
     resolver: zodResolver(guestSchema),
     defaultValues: {
@@ -88,23 +117,20 @@ function BookingPage() {
       email: "",
       phone: "",
       requests: "",
-      paymentMethod: "card",
     },
   });
 
   const onSubmit = async (data: GuestFormValues) => {
+    if (!stripe || !elements) return;
+
     setIsSubmitting(true);
     
-    // Default check-in to today and checkout based on nights for demo purposes
-    // since the date picker doesn't pass dates yet.
+    // Check-in / Check-out defaults
     const checkIn = new Date();
     const checkOut = new Date(checkIn.getTime() + nights * 24 * 60 * 60 * 1000);
 
-    // Generate a fresh booking ref each attempt to avoid duplicate key errors
-    const ref = `BK-${Math.floor(100000 + Math.random() * 900000)}`;
-
     const payload = {
-      booking_ref: ref,
+      booking_ref: bookingRef,
       room_id: room.id,
       guest_first_name: data.firstName,
       guest_last_name: data.lastName,
@@ -115,26 +141,43 @@ function BookingPage() {
       check_out_date: checkOut.toISOString().split("T")[0],
       nights: nights,
       total_price: total,
-      status: "pending"
+      status: "pending" // Webhook will change it to 'paid'
     };
 
     try {
+      // 1. Save booking to database
       const { error } = await supabase.from("bookings").insert(payload);
-      
       if (error) {
-        console.error("Supabase insert error:", JSON.stringify(error));
-        toast.error(`เกิดข้อผิดพลาด: ${error.message || error.code || "Unknown error"}`);
+        toast.error(`เกิดข้อผิดพลาดในการบันทึกการจอง: ${error.message}`);
         setIsSubmitting(false);
         return;
       }
 
-      setSubmittedEmail(data.email);
-      setConfirmed(true);
-      toast.success(`ส่งอีเมลยืนยันไปยัง ${data.email} เรียบร้อยแล้ว`);
+      // 2. Confirm Stripe Payment
+      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.href, // Not actually used when redirect: "if_required"
+          receipt_email: data.email,
+        },
+        redirect: "if_required",
+      });
+
+      if (stripeError) {
+        toast.error(stripeError.message || "การชำระเงินล้มเหลว");
+        // Could also update the booking status to 'failed' here
+      } else if (paymentIntent && paymentIntent.status === "succeeded") {
+        setSubmittedEmail(data.email);
+        setConfirmed(true);
+        toast.success(`ชำระเงินสำเร็จแล้ว`);
+      } else if (paymentIntent && paymentIntent.status === "processing") {
+        setSubmittedEmail(data.email);
+        setConfirmed(true);
+        toast.info(`กำลังประมวลผลการชำระเงิน`);
+      }
     } catch (err: unknown) {
       console.error("Booking error:", err);
-      const msg = err instanceof Error ? err.message : "Unknown error";
-      toast.error(`เกิดข้อผิดพลาด: ${msg}`);
+      toast.error(`เกิดข้อผิดพลาด: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -148,7 +191,7 @@ function BookingPage() {
           <CheckCircle2 className="h-20 w-20 text-emerald-500" />
           <h1 className="mt-6 font-serif text-5xl">ยืนยันการจองเรียบร้อย</h1>
           <p className="mt-4 text-muted-foreground">
-            ระบบได้ส่งใบยืนยันการจองไปยัง <span className="font-medium text-foreground">{submittedEmail}</span> แล้ว
+            ระบบได้รับชำระเงินเรียบร้อยและได้ส่งใบยืนยันการจองไปยัง <span className="font-medium text-foreground">{submittedEmail}</span> แล้ว
           </p>
 
           <div className="mt-8 w-full overflow-hidden rounded-3xl border border-border bg-card text-left shadow-xl shadow-primary/5">
@@ -158,7 +201,7 @@ function BookingPage() {
                   <div className="text-sm uppercase tracking-wider text-muted-foreground">หมายเลขการจอง</div>
                   <div className="mt-1 font-mono text-2xl font-bold">{bookingRef}</div>
                 </div>
-                <Badge className="bg-emerald-500/15 text-emerald-600 px-3 py-1.5 text-sm">Confirmed</Badge>
+                <Badge className="bg-emerald-500/15 text-emerald-600 px-3 py-1.5 text-sm">Paid & Confirmed</Badge>
               </div>
             </div>
             
@@ -316,57 +359,12 @@ function BookingPage() {
 
               <section>
                 <h2 className="font-serif text-2xl">วิธีการชำระเงิน</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  * โหมดเดโม่ — ยังไม่เชื่อมต่อจริง
-                </p>
-                <FormField
-                  control={form.control}
-                  name="paymentMethod"
-                  render={({ field }) => (
-                    <FormItem className="mt-4">
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          disabled={isTimeUp}
-                          className="space-y-3"
-                        >
-                          <FormItem className="flex items-center space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="card" className="peer sr-only" />
-                            </FormControl>
-                            <FormLabel className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 hover:bg-secondary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5">
-                              <CreditCard className="h-5 w-5 text-foreground/70" />
-                              <div className="font-medium text-base">บัตรเครดิต / เดบิต</div>
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="promptpay" className="peer sr-only" />
-                            </FormControl>
-                            <FormLabel className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 hover:bg-secondary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5">
-                              <ShieldCheck className="h-5 w-5 text-foreground/70" />
-                              <div className="font-medium text-base">PromptPay QR</div>
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="hotel" className="peer sr-only" />
-                            </FormControl>
-                            <FormLabel className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 hover:bg-secondary/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5">
-                              <ShieldCheck className="h-5 w-5 text-foreground/70" />
-                              <div className="font-medium text-base">ชำระที่โรงแรม</div>
-                            </FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="mt-4 rounded-2xl border border-border bg-card p-5">
+                  <PaymentElement />
+                </div>
               </section>
 
-              <Button type="submit" size="lg" className="w-full rounded-full py-6 text-base" disabled={isSubmitting || isTimeUp}>
+              <Button type="submit" size="lg" className="w-full rounded-full py-6 text-base" disabled={!stripe || isSubmitting || isTimeUp}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" /> กำลังดำเนินการ...
@@ -402,23 +400,23 @@ function BookingPage() {
                 <h3 className="font-medium mb-4">สรุปรายละเอียดการจอง</h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">ระยะเวลา</span>
-                    <span className="font-medium">{nights} คืน</span>
+                     <span className="text-muted-foreground">ระยะเวลา</span>
+                     <span className="font-medium">{nights} คืน</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">ผู้เข้าพัก</span>
-                    <span className="font-medium">{guests} ท่าน</span>
+                     <span className="text-muted-foreground">ผู้เข้าพัก</span>
+                     <span className="font-medium">{guests} ท่าน</span>
                   </div>
                 </div>
 
                 <div className="mt-6 space-y-3 border-t border-border pt-6 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">ราคา ({nights} คืน)</span>
-                    <span className="font-medium">฿{subtotal.toLocaleString()}</span>
+                     <span className="text-muted-foreground">ราคา ({nights} คืน)</span>
+                     <span className="font-medium">฿{subtotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">ภาษีมูลค่าเพิ่ม (7%)</span>
-                    <span className="font-medium">฿{taxes.toLocaleString()}</span>
+                     <span className="text-muted-foreground">ภาษีมูลค่าเพิ่ม (7%)</span>
+                     <span className="font-medium">฿{taxes.toLocaleString()}</span>
                   </div>
                   <div className="mt-4 flex items-end justify-between border-t border-border pt-4">
                     <div>
