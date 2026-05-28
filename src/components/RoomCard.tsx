@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Star } from "lucide-react";
+import { Star, Users, Maximize, Bed } from "lucide-react";
 import type { Room } from "@/data/rooms";
 
 export function RoomCard({ room }: { room: Room }) {
@@ -30,7 +30,17 @@ export function RoomCard({ room }: { room: Room }) {
             <span className="font-medium">{room.rating}</span>
           </div>
         </div>
-        <div className="text-sm text-muted-foreground">{room.location}</div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <Users className="h-3 w-3" /> {room.capacity} ท่าน
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Bed className="h-3 w-3" /> {room.beds}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Maximize className="h-3 w-3" /> {room.size} ตร.ม.
+          </span>
+        </div>
         <div className="mt-auto flex items-end justify-between pt-3">
           <div>
             <div className="font-serif text-2xl text-foreground">
@@ -38,9 +48,7 @@ export function RoomCard({ room }: { room: Room }) {
             </div>
             <div className="text-xs text-muted-foreground">/ คืน · รวมภาษี</div>
           </div>
-          <div className="text-xs text-muted-foreground">
-            {room.reviewsCount} รีวิว
-          </div>
+          <div className="text-xs text-muted-foreground">{room.reviewsCount} รีวิว</div>
         </div>
       </div>
     </Link>

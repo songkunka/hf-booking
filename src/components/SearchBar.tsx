@@ -1,26 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { CalendarIcon, MapPin, Search, Users } from "lucide-react";
+import { CalendarIcon, Search, Users } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
 
 export function SearchBar({ compact = false }: { compact?: boolean }) {
   const navigate = useNavigate();
-  const [destination, setDestination] = useState("");
   const [range, setRange] = useState<DateRange | undefined>();
   const [guests, setGuests] = useState(2);
 
   const handleSearch = () => {
-    navigate({ to: "/search" });
+    navigate({ to: "/rooms" });
   };
 
   return (
@@ -30,16 +24,7 @@ export function SearchBar({ compact = false }: { compact?: boolean }) {
         compact ? "" : "md:p-4",
       )}
     >
-      <div className="grid gap-2 md:grid-cols-[1.4fr_1.4fr_1fr_auto] md:gap-2">
-        <Field icon={<MapPin className="h-4 w-4" />} label="จุดหมาย">
-          <Input
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-            placeholder="เมือง โรงแรม หรือพื้นที่"
-            className="h-9 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-          />
-        </Field>
-
+      <div className="grid gap-2 md:grid-cols-[1.6fr_1fr_auto] md:gap-2">
         <Popover>
           <PopoverTrigger asChild>
             <button
@@ -68,50 +53,36 @@ export function SearchBar({ compact = false }: { compact?: boolean }) {
           </PopoverContent>
         </Popover>
 
-        <Field icon={<Users className="h-4 w-4" />} label="ผู้เข้าพัก">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setGuests(Math.max(1, guests - 1))}
-              className="flex h-6 w-6 items-center justify-center rounded-full border border-border text-sm hover:bg-secondary"
-            >
-              −
-            </button>
-            <span className="w-6 text-center text-sm font-medium">{guests}</span>
-            <button
-              type="button"
-              onClick={() => setGuests(guests + 1)}
-              className="flex h-6 w-6 items-center justify-center rounded-full border border-border text-sm hover:bg-secondary"
-            >
-              +
-            </button>
+        <div className="flex items-start gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-secondary/50">
+          <div className="mt-1 text-muted-foreground">
+            <Users className="h-4 w-4" />
           </div>
-        </Field>
+          <div className="flex-1">
+            <div className="text-xs text-muted-foreground">ผู้เข้าพัก</div>
+            <div className="mt-0.5 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setGuests(Math.max(1, guests - 1))}
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-border text-sm hover:bg-secondary"
+              >
+                −
+              </button>
+              <span className="w-6 text-center text-sm font-medium">{guests}</span>
+              <button
+                type="button"
+                onClick={() => setGuests(guests + 1)}
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-border text-sm hover:bg-secondary"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
 
         <Button onClick={handleSearch} size="lg" className="h-auto self-stretch px-6">
           <Search className="mr-2 h-4 w-4" />
-          ค้นหา
+          ดูห้องว่าง
         </Button>
-      </div>
-    </div>
-  );
-}
-
-function Field({
-  icon,
-  label,
-  children,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-secondary/50">
-      <div className="mt-1 text-muted-foreground">{icon}</div>
-      <div className="flex-1">
-        <div className="text-xs text-muted-foreground">{label}</div>
-        <div className="mt-0.5">{children}</div>
       </div>
     </div>
   );

@@ -1,15 +1,16 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { format, differenceInDays } from "date-fns";
-import { CalendarIcon, MapPin, Star, Users, Maximize, Bed } from "lucide-react";
+import { CalendarIcon, Star, Users, Maximize, Bed } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { getRoom, AMENITY_LABELS, MOCK_REVIEWS } from "@/data/rooms";
+import { getRoom, AMENITY_LABELS, MOCK_REVIEWS, HOTEL } from "@/data/rooms";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
+
 
 export const Route = createFileRoute("/rooms/$id")({
   loader: ({ params }) => {
@@ -83,9 +84,7 @@ function RoomDetail() {
               {room.name}
             </h1>
             <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="h-4 w-4" /> {room.location}
-              </span>
+              <span>{HOTEL.name}</span>
               <span className="inline-flex items-center gap-1">
                 <Star className="h-4 w-4 fill-primary text-primary" /> {room.rating} ·{" "}
                 {room.reviewsCount} รีวิว

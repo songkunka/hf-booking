@@ -1,16 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, User } from "lucide-react";
+import { Menu, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { HOTEL } from "@/data/rooms";
 
 const navItems = [
   { to: "/", label: "หน้าแรก" },
-  { to: "/search", label: "ค้นหาที่พัก" },
-  { to: "/profile", label: "บัญชีของฉัน" },
+  { to: "/rooms", label: "ห้องพัก" },
   { to: "/admin", label: "Admin" },
 ] as const;
 
@@ -18,9 +14,12 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-baseline gap-2">
           <span className="font-serif text-2xl tracking-tight text-foreground">
             Sànd<span className="text-primary">.</span>
+          </span>
+          <span className="hidden text-xs uppercase tracking-[0.18em] text-muted-foreground sm:inline">
+            Riverside Resort
           </span>
         </Link>
 
@@ -36,12 +35,16 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/login">เข้าสู่ระบบ</Link>
-          </Button>
+        <div className="hidden items-center gap-3 md:flex">
+          <a
+            href={`tel:${HOTEL.phone.replace(/\s/g, "")}`}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Phone className="h-3.5 w-3.5" />
+            {HOTEL.phone}
+          </a>
           <Button asChild size="sm">
-            <Link to="/login">สมัครสมาชิก</Link>
+            <Link to="/rooms">จองห้องพัก</Link>
           </Button>
         </div>
 
@@ -54,20 +57,13 @@ export function SiteHeader() {
           <SheetContent side="right" className="w-72">
             <div className="mt-8 flex flex-col gap-4">
               {navItems.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className="text-lg text-foreground"
-                >
+                <Link key={item.to} to={item.to} className="text-lg text-foreground">
                   {item.label}
                 </Link>
               ))}
-              <div className="mt-4 border-t border-border pt-4">
-                <Link to="/login" className="flex items-center gap-2 text-foreground">
-                  <User className="h-4 w-4" />
-                  เข้าสู่ระบบ
-                </Link>
-              </div>
+              <Button asChild className="mt-4">
+                <Link to="/rooms">จองห้องพัก</Link>
+              </Button>
             </div>
           </SheetContent>
         </Sheet>
